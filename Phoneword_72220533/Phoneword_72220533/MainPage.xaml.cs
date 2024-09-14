@@ -2,23 +2,57 @@
 {
     public partial class MainPage : ContentPage
     {
-        int count = 0;
-
         public MainPage()
         {
             InitializeComponent();
         }
 
-        private void OnCounterClicked(object sender, EventArgs e)
+        string translatedNumber;
+
+        private void OnTranslate(object sender, EventArgs e)
         {
-            count+=5;
+            string enteredNumber = PhoneNumberText.Text;
+            translatedNumber = PhonewordTranslator.ToNumber(enteredNumber);
 
-            if (count == 1)
-                CounterBtn.Text = $"Clicked {count} time";
+            if (!string.IsNullOrEmpty(translatedNumber))
+            {
+                //ketika textbox tidak kosong maka call button aktif
+                CallButton.IsEnabled = true;
+                CallButton.Text = "Call " + translatedNumber;
+            }
             else
-                CounterBtn.Text = $"Clicked {count} times";
+            {
+                CallButton.IsEnabled = false;
+                CallButton.Text = "Call";
+            }
+        }
 
-            SemanticScreenReader.Announce(CounterBtn.Text);
+        //menampilkan popup apakah yakin akan menelpon nomor tsb
+        async void OnCall(object sender, System.EventArgs e)
+        {
+            if (await this.DisplayAlert(
+                "Dial a Number",
+                "Would you like to call " + translatedNumber + "?",
+                "Yes",
+                "No"))
+            {
+                try
+                {
+                    //buka PhoneDialer dari perangkat
+                    if (PhoneDialer.Default.IsSupported)
+                        PhoneDialer.Default.Open(translatedNumber);
+                }
+                catch (ArgumentNullException)
+                {
+                    // ini nomer ga valid
+                    await DisplayAlert("Unable to dial", "Phone number was not valid.", "OK");
+                }
+                catch (Exception)
+                {
+                    // ini klo error lain
+                    await DisplayAlert("Unable to dial", "Phone dialing failed.", "OK");
+                }
+            }
         }
     }
 
